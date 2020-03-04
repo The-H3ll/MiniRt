@@ -6,13 +6,66 @@
 /*   By: molabhai <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/01/07 11:18:36 by molabhai          #+#    #+#             */
-/*   Updated: 2020/01/15 17:51:27 by molabhai         ###   ########.fr       */
+/*   Updated: 2020/02/29 20:56:48 by molabhai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minirt.h"
 
-static void		take_camera(char *str, t_strct 	*strct)
+void		take_camera(char *str, t_strct *strct, t_strct *head)
+{
+	int i;
+
+	i = 1;
+	if (strct->camera_nmbr >= 1)
+	{
+		strct->ray = strct->ray->next;
+		strct->vec_dir = strct->vec_dir->next;
+		ray_next_allocation(strct);
+		vec_next_allocation(strct);
+		next_(strct, head);
+	}
+	while (str[i] != '\n')
+	{
+		if (ft_isdigit(str[i]))
+		{
+			return_camera(strct, str, i);
+			return ;
+		}
+		i++;
+	}
+}
+
+void		take_sphere(char *str, t_strct *strct, t_strct *head)
+{
+	int	i;
+
+	i = 0;
+	if (strct->sphere_nmbr >= 1)
+	{
+		strct->sphere = strct->sphere->next;
+		sphere_next_allocation(strct);
+		if (head->sphere->next == NULL)
+			head->sphere->next = strct->sphere;
+		else if (head->sphere->next->next == NULL)
+			head->sphere->next->next = strct->sphere;
+		else if (head->sphere->next->next->next == NULL)
+			head->sphere->next->next->next = strct->sphere;
+		else if (head->sphere->next->next->next->next == NULL)
+			head->sphere->next->next->next->next = strct->sphere;
+	}
+	while (str[i] != '\n')
+	{
+		if (ft_isdigit(str[i]))
+		{
+			strct->sphere = sphere_coordinate(strct, str, i);
+			return ;
+		}
+		i++;
+	}
+}
+
+void		take_ambiant(t_strct *strct, char *str)
 {
 	int i;
 
@@ -21,153 +74,55 @@ static void		take_camera(char *str, t_strct 	*strct)
 	{
 		if (ft_isdigit(str[i]))
 		{
-			strct->ray->origin->x = ft_atoi_float(str + i);
+			strct->ambiant->ratio = ft_atoi_float(str + i);
+			if (str[i - 1] == '-')
+				strct->ambiant->ratio = -strct->ambiant->ratio;
+			if (strct->ambiant->ratio < 0 || strct->ambiant->ratio > 1)
+			{
+				perror("Please insert nmbr between [0,1]\n");
+				exit(-1);
+			}
 			while (ft_isdigit(str[i]) || str[i] == '.')
 				i++;
-			if (str[i] == ',')
+			while (!ft_isdigit(str[i]))
 				i++;
-			strct->ray->origin->y = ft_atoi_float(str + i);
-			while (ft_isdigit(str[i]) || str[i] == '.')
-				i++;
-			if (str[i] == ',')
-				i++;
-			strct->ray->origin->z = ft_atoi_float(str + i);
-			while (ft_isdigit(str[i]) || str[i] == '.')
-				i++;
-			while (!(ft_isdigit(str[i])))
-				i++;
-			strct->ray->dir->x = ft_atoi_float(str + i);
-			while (ft_isdigit(str[i]) || str[i] == '.')
-				i++;
-			if (str[i] == ',')
-				i++;
-			strct->ray->dir->y = ft_atoi_float(str + i);
-			while (ft_isdigit(str[i]) || str[i] == '.')
-				i++;
-			if (str[i] == ',')
-				i++;
-			strct->ray->dir->z = ft_atoi_float(str + i);
-			i++;
-			strct->ray->fov = ft_atoi_float(str + i);		
-			return ;
-		}
-		i++;
-	}
-}	
-
-static void		take_sphere(char *str,	t_strct *strct)
-{
-	int i;
-
-	i = 0;
-	while (str[i] != '\n')
-	{
-		if (ft_isdigit(str[i]))
-		{
-			strct->sphere->axe->x = ft_atoi_float(str + i);
-			printf("x === %f\n", strct->sphere->axe->x);
-            while (ft_isdigit(str[i]) || str[i] == '.')
-				i++;
-			if (str[i] == ',')
-				i++;
-			strct->sphere->axe->y = ft_atoi_float(str + i);
-			printf("y === %f\n", strct->sphere->axe->y);
-			while (ft_isdigit(str[i]) || str[i] == '.')
-				i++;
-			if (str[i] == ',')
-				i++;
-			strct->sphere->axe->z = ft_atoi_float(str + i);
-			printf("y === %f\n", strct->sphere->axe->z);
-			while (ft_isdigit(str[i]) || str[i] == '.')
-				i++;
-			while (!(ft_isdigit(str[i])))
-				i++;
-			strct->sphere->radius = ft_atoi_float(str + i);
-			printf("rad === %f\n", strct->sphere->radius);
-			while (ft_isdigit(str[i]) || str[i] == '.')
-				i++;
-			strct->sphere->color->red = ft_atoi(str + i);
-			printf("red === %f\n", strct->sphere->color->red);
-			while (!(ft_isdigit(str[i])))
-				i++;
-			while (ft_isdigit(str[i]))
-				i++;
-			if (str[i] == ',')
-				i++;
-			strct->sphere->color->green = ft_atoi(str + i);
-			printf("green === %f\n", strct->sphere->color->green);
-			while (ft_isdigit(str[i]))
-				i++;
-			if (str[i] == ',')
-				i++;
-			strct->sphere->color->blue = ft_atoi(str + i);
-			printf("blue === %f\n", strct->sphere->color->blue);
+			strct->ambiant->color = take_color(strct->ambiant->color, &i, str);
 			return ;
 		}
 		i++;
 	}
 }
 
-static void         take_ambiant(t_strct *strct, char *str)
+void		take_coordinate(t_strct *strct, char **av, int i)
 {
-    int i;
-
-    i = 1;
-    while (str[i] != '\n')
-    {
-        if (ft_isdigit(str[i]))
-        {
-            strct->ambiant->ratio = ft_atoi_float(str + i);
-            while (ft_isdigit(str[i]) || str[i] == '.')
-                i++;
-            while (!ft_isdigit(str[i]))
-                i++;
-            strct->ambiant->color->red = ft_atoi(str + i);
-            while (ft_isdigit(str[i]))
-                i++;
-           if (str[i] == ',')
-               i++;
-           strct->ambiant->color->green = ft_atoi(str + i);
-           while (ft_isdigit(str[i]))
-               i++;
-           if (str[i] == ',')
-               i++;
-           strct->ambiant->color->blue = ft_atoi(str + i);
-           return ;
-        }
-        i++;
-    }
-}
-
-//	the use of this function is to take the coordinate from *.rt
-void		take_coordinate(t_strct *strct, char **av)
-{
-	int fd;
-	char *str;
+	int			fd;
+	char		*str;
+	t_strct		*head;
 
 	fd = open(av[1], O_RDONLY);
-	str = (char *) calloc(sizeof(char) , 100);
+	str = (char *)calloc(sizeof(char), 100);
+	head = (t_strct *)malloc(sizeof(t_strct));
+	heads_point_to(strct, head);
+	head->cylindre->next = NULL;
+	head->ray->next = NULL;
+	head->vec_dir->next = NULL;
+	reset(strct);
 	while (get_next_line(fd, &str) > 0)
 	{
-		if (str[0] == 'R')
-			take_resolution(strct, str);
-        else if (str[0] == 'A')
-            take_ambiant(strct, str);
-		else if (str[0] == 'c')
-			take_camera(str, strct);
-        else if (str[0] == 'l')
-            take_light(str, strct);
-        else if (str[0] == 'p')
-            take_plane(str, strct);
-        else if (str[0] == 's')
-			take_sphere(str, strct);
+		take_object(strct, str, head, i);
 		free(str);
 	}
 	free(str);
+	strct->sphere = head->sphere;
+	strct->plane = head->plane;
+	strct->cylindre = head->cylindre;
+	strct->light = head->light;
+	strct->ray = head->ray;
+	strct->vec_dir = head->vec_dir;
 	str = NULL;
 }
 
-int		rgb_to_int(t_color color)
+int			rgb_to_int(t_color color)
 {
 	return ((color.red * 256 * 256) + (color.green * 256) + color.blue);
 }

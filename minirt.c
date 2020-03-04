@@ -6,14 +6,14 @@
 /*   By: molabhai <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/01/08 14:43:30 by molabhai          #+#    #+#             */
-/*   Updated: 2020/01/15 17:38:27 by molabhai         ###   ########.fr       */
+/*   Updated: 2020/02/26 16:31:59 by molabhai         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minirt.h"
 #include <mlx.h>
 
-int			test(int x, t_create *display)
+int				test(int x, t_create *display)
 {
 	if (x == 53)
 	{
@@ -23,17 +23,19 @@ int			test(int x, t_create *display)
 	return (0);
 }
 
-static void		create_window(t_display *display, t_create *create)
+static void		create_window(t_display *display, t_create *create, int i)
 {
 	create->ptr = mlx_init();
 	if (create->ptr == NULL)
 		return ;
-	create->win = mlx_new_window(create->ptr, display->width, display->height, "MiniRT");
+	if (i == 0)
+		create->win = mlx_new_window(create->ptr, display->width,
+				display->height, "MiniRT");
 	if (create->win == NULL)
 		return ;
 }
 
-static	void			take_height_width(t_strct *strct, char *str)
+static	void	take_height_width(t_strct *strct, char *str)
 {
 	int i;
 
@@ -41,50 +43,57 @@ static	void			take_height_width(t_strct *strct, char *str)
 	while (!(ft_isdigit(str[i])))
 		i++;
 	strct->display->width = ft_atoi(str + i);
+	if (str[i - 1] == '-')
+		strct->display->width = -strct->display->width;
 	while (ft_isdigit(str[i]))
 		i++;
+	while (!(ft_isdigit(str[i])))
+		i++;
 	strct->display->height = ft_atoi(str + i);
+	if (str[i - 1] == '-')
+		strct->display->width = -strct->display->width;
+	if (strct->display->width < 0 || strct->display->height < 0)
+	{
+		perror("ERROR 'positive pls'\n");
+		exit(0);
+	}
 }
 
-void	take_resolution(t_strct	*strct, char *str)
+void			take_resolution(t_strct *strct, char *str, int i)
 {
-	strct->display = (t_display *) malloc(sizeof(t_display));
-	strct->create = (t_create *) malloc(sizeof(t_create));
 	take_height_width(strct, str);
-	create_window(strct->display, strct->create);
+	if (strct->display->width > 3000)
+		strct->display->width = 3000;
+	if (strct->display->height > 1600)
+		strct->display->height = 1600;
+	create_window(strct->display, strct->create, i);
 }
 
-int		minirt(int ac, char **av)
+int				minirt(int ac, char **av)
 {
-	char 		*str;
 	t_strct		strct;
+	int			i;
 
+	i = 0;
 	ft_memset(&strct, 0, sizeof(t_strct));
-	str = (char *)calloc(sizeof(char), 50);
-	if (ac < 2)
+	if (ac < 2 || ac > 3)
 	{
 		ft_putstr("Usage ./a.out *.rt\n");
 		return (-1);
 	}
-    strct.ray = (t_ray *) malloc(sizeof(t_ray));
-    strct.ray->origin = (t_vector *) malloc(sizeof(t_vector));
-    strct.ray->dir = (t_vector *) malloc(sizeof(t_vector));
-    strct.sphere = (t_sphere *) malloc(sizeof(t_sphere));
-    strct.sphere->axe = (t_vector *) malloc(sizeof(t_vector));
-    strct.display = (t_display *) malloc(sizeof(t_display));
-    strct.sphere->color = (t_color *) malloc(sizeof(t_color));
-	strct.ambiant = (t_ambiant *) malloc(sizeof(t_ambiant));
-    strct.ambiant->color = (t_color *) malloc(sizeof(t_color));
-    strct.color = (t_color *) malloc(sizeof(t_color));
-    strct.light = (t_light *) malloc(sizeof(t_light));
-    strct.light->pos = (t_vector *) malloc(sizeof(t_vector));
-    strct.light->color = (t_color *) malloc(sizeof(t_color));
-    strct.plane = (t_plane *) malloc(sizeof(t_plane));
-    strct.plane->pos = (t_vector *) malloc(sizeof(t_vector));
-    strct.plane->color = (t_color *) malloc(sizeof(t_color));
-    strct.plane->dir = (t_vector *) malloc(sizeof(t_vector));
-    take_coordinate(&strct, av); 
-    eye_view(strct);
-    mlx_loop(strct.create->ptr);
+	if (check_rt(av[1]) == 0)
+	{
+		perror("ERROR\n");
+		exit(0);
+	}
+	strct.save = 0;
+	if (ac == 3)
+		strct.save = check_save(av[2], strct.save, &i);
+	object_allocation(&strct);
+	object_allocation_two(&strct);
+	take_coordinate(&strct, av, i);
+	eye_view(strct, ac, 1);
+	free_object(&strct);
+	free_object_two(&strct);
 	return (0);
 }
